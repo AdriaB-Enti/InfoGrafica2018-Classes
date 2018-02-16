@@ -14,6 +14,8 @@ extern void PhysicsCleanup();*/
 extern void GUI();
 
 extern void GLmousecb(MouseEvent ev);
+extern void travelling(float dx, float dy);
+extern void spinCube(float dx, float dy);
 extern void GLResize(int width, int height);
 extern void GLinit(int width, int height);
 extern void GLcleanup();
@@ -130,6 +132,8 @@ int main(int argc, char** argv) {
 			GLmousecb(ev);
 		}
 
+		//travelling(0.1f, 0.1f);
+		spinCube(0.0f, 0.1f);
 
 		double currentTime = (double)SDL_GetTicks() / 1000.0;
 		GLrender(currentTime);

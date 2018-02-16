@@ -59,7 +59,7 @@ namespace RenderVars {
 		bool waspressed = false;
 	} prevMouse;
 
-	float panv[3] = { 0.f, -5.f, -15.f };
+	float panv[3] = { 0.f, -5.f, -15.f };		//position
 	float rota[2] = { 0.f, 0.f };
 }
 namespace RV = RenderVars;
@@ -72,8 +72,8 @@ void GLResize(int width, int height) {
 
 void GLmousecb(MouseEvent ev) {
 	if(RV::prevMouse.waspressed && RV::prevMouse.button == ev.button) {
-		float diffx = ev.posx - RV::prevMouse.lastx;
-		float diffy = ev.posy - RV::prevMouse.lasty;
+		float diffx = ev.posx - RV::prevMouse.lastx;						//distance in X moved by mouse in this frame
+		float diffy = ev.posy - RV::prevMouse.lasty;						//Y axis
 		switch(ev.button) {
 		case MouseEvent::Button::Left: // ROTATE
 			RV::rota[0] += diffx * 0.005f;
@@ -94,6 +94,17 @@ void GLmousecb(MouseEvent ev) {
 	}
 	RV::prevMouse.lastx = ev.posx;
 	RV::prevMouse.lasty = ev.posy;
+	//travelling(0.1f,0.1f);
+}
+
+void travelling(float dx, float dy) {	//speed = 0.1f
+	RV::panv[0] += dx;
+	RV::panv[1] += dy;
+}
+
+void spinCube(float dx, float dy) {
+	RV::rota[0] += dy;	//rotació eix X
+	RV::rota[1] += dx;	//rotació eix Y
 }
 
 void GLinit(int width, int height) {
@@ -131,11 +142,11 @@ void GLrender(double currentTime) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	RV::_modelView = glm::mat4(1.f);
-	RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
-	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
-	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
+	RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));		//traslladem el cub amb els valors de RV
+	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));					//rotem en l'eix X
+	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));					//rotem en l'eix Y
 
-	RV::_MVP = RV::_projection * RV::_modelView;
+	RV::_MVP = RV::_projection * RV::_modelView;															//matriu final = projeccó
 
 	// render code
 	/*Box::drawCube();

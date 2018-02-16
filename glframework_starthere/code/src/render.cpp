@@ -27,7 +27,7 @@ namespace Cube {
 	void updateCube(const glm::mat4& transform);
 	void drawCube();
 }
-
+//Code made at class
 namespace MyFirstShader {
 	void myInitCode(void);
 	GLuint myShaderCompile(void);
@@ -38,8 +38,6 @@ namespace MyFirstShader {
 	GLuint myRenderProgram;
 	GLuint myVAO;
 }
-
-
 
 
 ////////////////
@@ -112,15 +110,9 @@ void GLinit(int width, int height) {
 	/*Box::setupCube();
 	Axis::setupAxis();
 	Cube::setupCube();*/
+	Cube::setupCube();
 
-
-
-
-
-
-
-
-
+	//MyFirstShader::myInitCode();
 
 }
 
@@ -130,7 +122,9 @@ void GLcleanup() {
 	Cube::cleanupCube();
 */
 
+	//MyFirstShader::myCleanUpCode();
 
+	Cube::cleanupCube();
 }
 
 void GLrender(double currentTime) {
@@ -147,14 +141,14 @@ void GLrender(double currentTime) {
 	/*Box::drawCube();
 	Axis::drawAxis();
 	Cube::drawCube();*/
-	//_----------------------------------------------------------------------------------------------------------------------------------
 	
-	printf("%f --\n", abs(cos(currentTime)));
+	//printf("%f --\n", abs(cos(currentTime)));
 	const GLfloat red[] = { abs(cosf(currentTime)), abs(sinf(0.33f*currentTime)), 1.0f, 1.0f, }; //RGBA
 	//també es podria fer sin(currentTime
 	glClearBufferfv(GL_COLOR, 0, red);
 
-
+	//MyFirstShader::myRenderCode(currentTime);
+	Cube::drawCube();
 	ImGui::Render();
 }
 
@@ -1005,32 +999,82 @@ void main() {\n\
 
 ////////////////////////////////////////////////// MY FIRST SHADER
 namespace MyFirstShader {
-	//1. Define the shader source code
+	//1. Define the shader source code - gl_Position is a keyword for vertex position
 	static const GLchar* vertex_shader_source[] =
 	{
 		"#version 330\n\
 		\n\
-		void main(){ \n\
-		gl_Postion = vec4(0.0, 0.0, 0.5, 1.0); \n\
-		}\n\
-		"
-	}
+		void main(){\n\
+			const vec4 vertices[3] = vec4[3](	vec4(0.25, -0.25, 0.5, 1.0),\n\
+												vec4(0.25, 0.25, 0.5, 1.0),\n\
+												vec4(-0.25, -0.25, 0.5, 1.0) );\n\
+			gl_Position = vertices[gl_VertexID]; \n\
+		}"
+	};
+
+	static const GLchar* fragment_shader_source[] = {
+		"#version 330\n\
+		\n\
+		out vec4 color;\n\
+		\n\
+		void main(){\n\
+			color= vec4(0.0, 0.8, 1.0, 1.0);\n\
+		}"
+	};
 
 	//2. Compile and link the shaders
 	GLuint myShaderCompile(void) {
+		GLuint vertex_shader;	//direcció de memoria de la GPU
+		GLuint fragment_shader;
+		GLuint program;
 
+		vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+		glShaderSource(vertex_shader, 1, vertex_shader_source, NULL);				//passem el codi font
+		glCompileShader(vertex_shader);												//COMPILAR EL SHADER
+
+		fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(fragment_shader, 1, fragment_shader_source, NULL);
+		glCompileShader(fragment_shader);
+
+		program = glCreateProgram();
+		glAttachShader(program, vertex_shader);
+		glAttachShader(program, fragment_shader);
+		glLinkProgram(program);		//(similar a quan tenim una llibreria ) linkegem el programa compilat i s'assegura que te les funcions necessaries
+
+		glDeleteShader(vertex_shader);		//ja hem linkat el compilat del shader i els podem esborrar de al memoria
+		glDeleteShader(fragment_shader);
+
+		return program;
 	}
+
 	//3. render function
 	void myInitCode(void) {
+		myRenderProgram = myShaderCompile();
+		glCreateVertexArrays(1, &myVAO);		//
+		glBindVertexArray(myVAO);				//
 
 	}
 
 	//4. init function
 	void myRenderCode(double currentTime) {
+		const GLfloat color[] = { abs(sinf(currentTime)), abs(sinf(0.33f*currentTime)), 1.0f, 1.0f, }; //RGBA
+		glClearBufferfv(GL_COLOR, 0, color);
 
+		glUseProgram(myRenderProgram);
+
+		glPointSize(40.0f);		//cada vertex tindra un tamany de 40 pixels
+		//glDrawArrays(GL_POINTS, 0, 3);	//això només pintaria els punts
+		//glDrawArrays(GL_LINES,0,3);		//això només pinta parelles de punts
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		
+
+		//printf("%f --\n", abs(cos(currentTime)));
+																									 //també es podria fer sin(currentTime
 	}
+
 	//5. cleanup function
 	void myCleanUpCode(void) {
-
+		glDeleteVertexArrays(1, &myVAO);
+		glDeleteProgram(myRenderProgram);
 	}
 }

@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
 		}
 
 		//travelling(0.1f, 0.1f);
-		spinCube(0.0f, 0.1f);
+		//spinCube(0.0f, 0.1f);
 
 		double currentTime = (double)SDL_GetTicks() / 1000.0;
 		GLrender(currentTime);

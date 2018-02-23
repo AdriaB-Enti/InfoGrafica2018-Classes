@@ -26,6 +26,7 @@ namespace Cube {
 	void cleanupCube();
 	void updateCube(const glm::mat4& transform);
 	void drawCube();
+	void draw2Cubes(double currentTime);
 }
 //Code made at class
 namespace MyFirstShader {
@@ -118,9 +119,8 @@ void GLinit(int width, int height) {
 	RV::_projection = glm::perspective(RV::FOV, (float)width/(float)height, RV::zNear, RV::zFar);
 
 	// Setup shaders & geometry
-	/*Box::setupCube();
+	Box::setupCube();
 	Axis::setupAxis();
-	Cube::setupCube();*/
 	Cube::setupCube();
 
 	//MyFirstShader::myInitCode();
@@ -128,10 +128,8 @@ void GLinit(int width, int height) {
 }
 
 void GLcleanup() {
-	/*Box::cleanupCube();
+	Box::cleanupCube();
 	Axis::cleanupAxis();
-	Cube::cleanupCube();
-*/
 
 	//MyFirstShader::myCleanUpCode();
 
@@ -149,17 +147,17 @@ void GLrender(double currentTime) {
 	RV::_MVP = RV::_projection * RV::_modelView;															//matriu final = projeccó
 
 	// render code
-	/*Box::drawCube();
+	Box::drawCube();
 	Axis::drawAxis();
-	Cube::drawCube();*/
 	
 	//printf("%f --\n", abs(cos(currentTime)));
-	const GLfloat red[] = { abs(cosf(currentTime)), abs(sinf(0.33f*currentTime)), 1.0f, 1.0f, }; //RGBA
+	//const GLfloat red[] = { abs(cosf(currentTime)), abs(sinf(0.33f*currentTime)), 1.0f, 1.0f, }; //RGBA
 	//també es podria fer sin(currentTime
-	glClearBufferfv(GL_COLOR, 0, red);
+	//glClearBufferfv(GL_COLOR, 0, red);
 
 	//MyFirstShader::myRenderCode(currentTime);
-	Cube::drawCube();
+	//Cube::drawCube();
+	Cube::draw2Cubes(currentTime);
 	ImGui::Render();
 }
 
@@ -999,7 +997,21 @@ void main() {\n\
 		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
 		glUniform4f(glGetUniformLocation(cubeProgram, "color"), 0.1f, 1.f, 1.f, 0.f);
 		glDrawElements(GL_TRIANGLE_STRIP, numVerts, GL_UNSIGNED_BYTE, 0);
-	
+
+		glUseProgram(0);
+		glBindVertexArray(0);
+		glDisable(GL_PRIMITIVE_RESTART);
+	}
+	void Cube::draw2Cubes(double currentTime) {
+		glEnable(GL_PRIMITIVE_RESTART);
+		glBindVertexArray(cubeVao);
+		glUseProgram(cubeProgram);
+		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(objMat));
+		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
+		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
+		glUniform4f(glGetUniformLocation(cubeProgram, "color"), 0.1f, 1.f, 1.f, 0.f);
+		glDrawElements(GL_TRIANGLE_STRIP, numVerts, GL_UNSIGNED_BYTE, 0);
+
 		glUseProgram(0);
 		glBindVertexArray(0);
 		glDisable(GL_PRIMITIVE_RESTART);

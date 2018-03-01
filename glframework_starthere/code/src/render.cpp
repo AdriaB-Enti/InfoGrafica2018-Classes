@@ -40,13 +40,16 @@ namespace MyFirstShader {
 	GLuint myVAO;
 }
 
+float cubeDisplacement = 0;
+glm::vec3 cameraPos = glm::vec3(0.f, 3.f, 10.f);		//posem la càmara en un valor de Z positiu perque la càmara sempre mira cap a l'eix Z negatiu
+glm::vec3 firstCubePos = glm::vec3(-1.0f, 2.0f, 3.0f);	//posició del primer cub (anirà canviant)
 
 ////////////////
 
 namespace RenderVars {
-	const float FOV = glm::radians(65.f);
-	const float zNear = 1.f;
-	const float zFar = 50.f;
+	const float FOV = glm::radians(80.f);
+	const float zNear = 0.01f;
+	const float zFar = 70.f;
 
 	glm::mat4 _projection;
 	glm::mat4 _modelView;
@@ -115,8 +118,13 @@ void GLinit(int width, int height) {
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-
+	
+	float scale = 2.f;
+	
 	RV::_projection = glm::perspective(RV::FOV, (float)width/(float)height, RV::zNear, RV::zFar);
+	//RV::_projection = glm::ortho(-(float)width/scale, (float)width/scale, 0.f, height/scale, 0.f, 120.f);	//càmara ortogràfica
+
+
 
 	// Setup shaders & geometry
 	Box::setupCube();
@@ -140,11 +148,21 @@ void GLrender(double currentTime) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	RV::_modelView = glm::mat4(1.f);
-	RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));		//traslladem el cub amb els valors de RV
-	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));					//rotem en l'eix X
-	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));					//rotem en l'eix Y
+	RV::_modelView = glm::translate(glm::mat4(1.f), cameraPos);
+	//RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));		//traslladem el mon amb els valors de RV
+	//RV::_modelView = glm::translate(RV::_modelView, glm::vec3(-cubeDisplacement,0.f,0.f));		//traslladem el mon amb el cubeDIsplacement
+
+	//RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));					//rotem en l'eix X
+	//RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));					//rotem en l'eix Y
+
+	//RV::_modelView = glm::rotate(RV::_modelView, cubeDisplacement/5.f, glm::vec3(0.f, 1.f, 0.f));					//rotem la càmara - testing
+	
+	RV::_modelView = glm::lookAt(cameraPos, firstCubePos, glm::vec3(0.f, 1.0f, 0.f));
+	
 
 	RV::_MVP = RV::_projection * RV::_modelView;															//matriu final = projeccó
+
+
 
 	// render code
 	Box::drawCube();
@@ -157,6 +175,7 @@ void GLrender(double currentTime) {
 
 	//MyFirstShader::myRenderCode(currentTime);
 	//Cube::drawCube();
+	
 	Cube::draw2Cubes(currentTime);
 	ImGui::Render();
 }
@@ -1008,9 +1027,19 @@ void main() {\n\
 		glBindVertexArray(cubeVao);
 		glUseProgram(cubeProgram);
 
-		glm::vec3 firstCubePos = glm::vec3(-1.0f, 2.0f, 3.0f);
+		//glm::vec3 firstCubePos = glm::vec3(-1.0f, 2.0f, 3.0f);	//posat a dalt
 		glm::vec3 secondCubePos = glm::vec3(-1.0f, 2.0f, 3.0f);
 		glm::mat4 t = glm::translate(glm::mat4(), firstCubePos);
+		
+		//MOVEM EL CUB ORIGINAL 
+		cubeDisplacement += 0.01f;
+		if (cubeDisplacement > 10)
+		{
+			cubeDisplacement = 0;
+		}
+		firstCubePos += glm::vec3(cubeDisplacement,0,0);
+		//t = glm::translate(t, glm::vec3(cubeDisplacement,0.f,0.f));
+
 		objMat = t;
 
 		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(objMat));

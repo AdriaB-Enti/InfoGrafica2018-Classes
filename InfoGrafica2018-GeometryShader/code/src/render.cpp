@@ -37,7 +37,7 @@ namespace MyFirstShader {
 }
 
 namespace GeometryShader {
-	glm::vec4 newOffset = glm::vec4(0, 0.5f, 0, 0);
+	glm::vec4 firstVertexPosition = glm::vec4(0, 0.5f, 0, 0);
 	void mySetupCode();
 	void myCleanupCode();
 	void myRenderCode();
@@ -147,7 +147,7 @@ void GLrender(double currentTime) {
 	//MyFirstShader::myRenderCode(currentTime);
 	GeometryShader::myRenderCode();
 	
-	GeometryShader::newOffset.x = sinf(currentTime);
+	//GeometryShader::firstVertexPosition.x = sinf(currentTime);
 
 	ImGui::Render();
 }
@@ -1009,16 +1009,17 @@ namespace GeometryShader {
 		glDeleteProgram(myRenderProgram);
 	}
 
+	//He comentat la resta de vertex
 	GLuint myShaderCompile(void) {
 		static const GLchar * vertex_shader_source[] =
 		{
 			"#version 330										\n\
 		\n\
 		void main() {\n\
-		const vec4 vertices[3] = vec4[3](vec4( 0.25, -0.25, 0.5, 1.0),\n\
+		/*const vec4 vertices[3] = vec4[3](vec4( 0.25, -0.25, 0.5, 1.0),\n\
 									   vec4(0.25, 0.25, 0.5, 1.0),\n\
-										vec4( -0.25,  -0.25, 0.5, 1.0));\n\
-		gl_Position = vertices[gl_VertexID];\n\
+										vec4(-0.25, -0.25, 0.5, 1.0));*/\n\
+		gl_Position = vec4( 0.25, -0.25, 0.5, 1.0);\n\
 		}"
 		};
 		static const GLchar * geom_shader_source[] =
@@ -1027,7 +1028,6 @@ namespace GeometryShader {
 			layout(triangles) in;										\n\
 			layout(triangle_strip, max_vertices = 6) out;				\n\
 			uniform vec4 newOffset;										\n\
-			//vec4 offset = vec4(0.8,0.5,0.5,0.0);						\n\
 			void main() {												\n\
 				for(int i=0; i<3; i++){									\n\
 					gl_Position = gl_in[i].gl_Position+newOffset;		\n\
@@ -1036,6 +1036,22 @@ namespace GeometryShader {
 				EndPrimitive();											\n\
 				for(int i=0; i<3; i++){									\n\
 					gl_Position = gl_in[i].gl_Position-newOffset;		\n\
+					EmitVertex();										\n\
+				}														\n\
+				EndPrimitive();											\n\
+			}"
+		};
+		static const GLchar * geom_create_triangle_shader_source[] =
+		{
+			"#version 330												\n\
+			layout(triangles) in;										\n\
+			layout(triangle_strip, max_vertices = 4) out;				\n\
+			uniform vec4 newOffset;	\n\
+			const vec4 vertices[4] = vec4[4](vec4(0.0,0.0,0.0,0.0),		\n\
+			vec4(0.0,0.3,0.0,0.0), vec4(-0.3,0.0,0.0,0.0), vec4(-0.3,0.3,0.0,0.0));		\n\
+			void main() {												\n\
+				for(int i=0;i<4;i++){									\n\
+					gl_Position = gl_in[0].gl_Position+vertices[i];		\n\
 					EmitVertex();										\n\
 				}														\n\
 				EndPrimitive();											\n\
@@ -1062,7 +1078,8 @@ namespace GeometryShader {
 		glCompileShader(vertex_shader);
 
 		geom_shader = glCreateShader(GL_GEOMETRY_SHADER);
-		glShaderSource(geom_shader, 1, geom_shader_source, NULL);
+		//glShaderSource(geom_shader, 1, geom_shader_source, NULL);//geom_create_triangle_shader_source
+		glShaderSource(geom_shader, 1, geom_create_triangle_shader_source, NULL);
 		glCompileShader(geom_shader);
 
 		fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -1092,7 +1109,7 @@ namespace GeometryShader {
 	}
 	void myRenderCode() {
 		glUseProgram(myRenderProgram);
-		glUniform4f(glGetUniformLocation(myRenderProgram, "newOffset"), (GLfloat) newOffset.x, (GLfloat)newOffset.y, (GLfloat)newOffset.z, (GLfloat)newOffset.w);	//TODO: modificar i passar simplement el currentTime, i fer els calculs del sinus en el mateix shader
+		glUniform4f(glGetUniformLocation(myRenderProgram, "newOffset"), (GLfloat) firstVertexPosition.x, (GLfloat)firstVertexPosition.y, (GLfloat)firstVertexPosition.z, (GLfloat)firstVertexPosition.w);	//TODO: modificar i passar simplement el currentTime, i fer els calculs del sinus en el mateix shader
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 }

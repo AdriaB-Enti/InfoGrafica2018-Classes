@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cassert>
 #include <vector>
+#include <iostream>
 
 #include "GL_framework.h"
 
@@ -33,6 +34,17 @@ namespace Cube {
 
 
 
+//variables to load an object:
+namespace LoadedObject {
+	std::vector< glm::vec3 > vertices;
+	std::vector< glm::vec2 > uvs;
+	std::vector< glm::vec3 > normals;
+
+	void setupLoadedObject();
+	void cleanupLoadedObject();
+
+	void drawLoadedObject();
+}
 
 
 
@@ -107,10 +119,10 @@ void GLinit(int width, int height) {
 	Axis::setupAxis();
 	Cube::setupCube();*/
 
+	
+	LoadedObject::setupLoadedObject();
 
-
-
-
+	
 
 
 
@@ -178,6 +190,92 @@ void linkProgram(GLuint program) {
 		delete[] buff;
 	}
 }
+
+
+//////////////////////////////////////////////// LOADED OBJECT
+namespace LoadedObject {
+	//std::vector< glm::vec3 > vertices;	//---DELETE
+	//std::vector< glm::vec2 > uvs;
+	//std::vector< glm::vec3 > normals;
+
+	GLuint loadedObjectVao;
+	GLuint loadedObjectVbo[2];	//----------------2: Vertex positions and normals
+	GLuint loadedObjectShaders[2];
+	GLuint loadedObjectProgram;
+
+	const char* loadedObject_vertShader = 
+		"#version 330\n\
+		in vec3 in_Position;\n\
+		in vec3 in_Normal;\n\
+		out vec4 vert_Normal;\n\
+		uniform mat4 objMat;\n\
+		uniform mat4 mv_Mat;\n\
+		uniform mat4 mvpMat;\n\
+		void main() {\n\
+			gl_Position = mvpMat * objMat * vec4(in_Position, 1.0);\n\
+			vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0);\n\
+		}";
+
+	const char* loadedObject_fragShader =
+		"#version 330\n\
+		in vec4 vert_Normal;\n\
+		out vec4 out_Color;\n\
+		uniform mat4 mv_Mat;\n\
+		uniform vec4 color;\n\
+		void main() {\n\
+			out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(0.0, 1.0, 0.0, 0.0)) + color.xyz * 0.3, 1.0 );\n\
+		}";
+
+
+	void setupLoadedObject() {
+		bool res = loadOBJ("cube.obj", LoadedObject::vertices, LoadedObject::uvs, LoadedObject::normals);
+		for (int i = 0; i < LoadedObject::vertices.size(); i++)
+		{
+			std::cout << "vert" << i << ": " << LoadedObject::vertices.at(i).x << "/" << LoadedObject::vertices.at(i).y << "/" << LoadedObject::vertices.at(i).z << std::endl;
+		}
+
+
+		if (res)
+			std::cout << "Object was loaded succesfully \n";
+		else 
+			std::cout << "ERROR AT LOADING OBJECT \n";
+
+
+		//Create LoadedObject program
+		glGenVertexArrays(1, &loadedObjectVao);
+		glBindVertexArray(loadedObjectVao);
+		glGenBuffers(2, loadedObjectVbo);		//------- Object vertexs and normals
+
+		glBindBuffer(GL_ARRAY_BUFFER, loadedObjectVbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, LoadedObject::vertices.size()*sizeof(glm::vec3), &LoadedObject::vertices[0], GL_STATIC_DRAW); //podriem tenir una array normal, per en principi això pot agafar el vector
+		glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, loadedObjectVbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, LoadedObject::normals.size() * sizeof(glm::vec3), &LoadedObject::normals[0], GL_STATIC_DRAW);
+		glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(1);
+
+		/*glPrimitiveRestartIndex(UCHAR_MAX);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeVbo[2]);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIdx), cubeIdx, GL_STATIC_DRAW);*/
+
+
+	}
+	void cleanupLoadedObject() {
+		glDeleteBuffers(3, loadedObjectVbo);
+		glDeleteVertexArrays(1, &loadedObjectVao);
+
+		glDeleteProgram(loadedObjectProgram);
+		glDeleteShader(loadedObjectShaders[0]);
+		glDeleteShader(loadedObjectShaders[1]);
+	}
+	void drawLoadedObject() {
+
+	}
+}
+
+
 
 ////////////////////////////////////////////////// BOX
 namespace Box{

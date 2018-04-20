@@ -39,7 +39,7 @@ namespace Sphere {
 
 
 namespace Lights {
-	glm::vec3 position = glm::vec3(4);
+	glm::vec3 position = glm::vec3(4,4,4);
 }
 
 //variables to load an object:
@@ -48,9 +48,10 @@ namespace LoadedObject {
 	std::vector< glm::vec2 > uvs;
 	std::vector< glm::vec3 > normals;
 
-	void setupLoadedObject(std::string objectModel, float scale);
-	void cleanupLoadedObject();
+	glm::vec3 color = glm::vec3(1.0, 1.0, 1.0);
 
+	void setupLoadedObject(std::string objectModel, float scale, glm::vec3 initColor = glm::vec3(1.0, 1.0, 1.0));
+	void cleanupLoadedObject();
 	void drawLoadedObject();
 }
 
@@ -219,16 +220,19 @@ namespace LoadedObject {
 		uniform mat4 mv_Mat;\n\
 		uniform mat4 mvpMat;\n\
 		uniform vec4 lightPos;\n\
-		out vec4 lightDifuse;\n\
+		out float lightDifuse;\n\
 		void main() {\n\
-			gl_Position = mvpMat * objMat * vec4(in_Position, 1.0);\n\
-			vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0);\n\
-			\n\
-			float distance = distance(vec4(in_Position, 1.0),lightPos);\n\
-			vec4 lightDir = normalize(lightPos - gl_Position);\n\
-			\n\
-			//lightDifuse = dot(vec4(in_Normal, 1.0),lightDir)*2/(4*3.14159);\n\
-			//lightDifuse = dot(vec4(in_Normal.xyz, 1.0),lightDir)*2.0;\n\
+			gl_Position = mvpMat * objMat * vec4(in_Position, 1.0);											\n\
+			vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0);											\n\
+																											\n\
+			vec4 newPos = objMat * vec4(in_Position, 1.0);	//Només transformem amb la matriu d'objecte		\n\
+			vec4 newNormal = vec4(in_Normal, 1.0);		//No cal transformar les normals					\n\
+																											\n\
+			float distance = distance(lightPos, newPos);													\n\
+			vec4 lightDir = normalize(lightPos - newPos);													\n\
+																											\n\
+			lightDifuse = dot(newNormal,lightDir)*150/(4*3.14159*distance*distance);						\n\
+			//lightDifuse = 1.0;\n\
 		}";
 
 	const char* loadedObject_fragShader =
@@ -238,37 +242,32 @@ namespace LoadedObject {
 		uniform mat4 mv_Mat;\n\
 		uniform vec4 color;\n\
 		uniform vec4 lightPos;\n\
-		in vec4 lightDifuse;\n\
+		in float lightDifuse;\n\
 		void main() {\n\
 			//out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(0.0, 1.0, 0.0, 0.0)) + color.xyz * 0.3, 1.0 );\n\
-			//out_Color = vec4(dot(lightPos,vert_Normal),0.0,0.0, 1.0 );\n\
-			//out_Color = vec4(dot(lightPos,vert_Normal),0.0,0.0, 1.0 );\n\
-			out_Color = vec4(lightDifuse.xyz, 1.0 );\n\
+			out_Color = vec4(color.xyz*lightDifuse, 1.0 );\n\
 		}";
 
 
 
-	void setupLoadedObject(std::string objectModel, float scale) {
-
+	void setupLoadedObject(std::string objectModel, float scale, glm::vec3 initColor) {
+		color = initColor;
 		objMat = glm::scale(glm::mat4(), glm::vec3(scale));
 
 		//bool res = loadOBJ("cube.obj", LoadedObject::vertices, LoadedObject::uvs, LoadedObject::normals);
 		bool res = loadOBJ(objectModel.c_str(), LoadedObject::vertices, LoadedObject::uvs, LoadedObject::normals);
 		
-		if (false)
+		if (false) //Posar a true si es vol debugar els vertexs
 		{
 			for (int i = 0; i < LoadedObject::vertices.size(); i++)
 			{
 				std::cout << "vert" << i << ": " << LoadedObject::vertices.at(i).x << "/" << LoadedObject::vertices.at(i).y << "/" << LoadedObject::vertices.at(i).z << std::endl;
 			}
 		}
-
-
 		if (res)
 			std::cout << "Object was loaded succesfully \n";
 		else 
 			std::cout << "ERROR AT LOADING OBJECT \n";
-
 
 		//Create LoadedObject program
 		glGenVertexArrays(1, &loadedObjectVao);
@@ -319,7 +318,7 @@ namespace LoadedObject {
 		glUniformMatrix4fv(glGetUniformLocation(loadedObjectProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(objMat));
 		glUniformMatrix4fv(glGetUniformLocation(loadedObjectProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
 		glUniformMatrix4fv(glGetUniformLocation(loadedObjectProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
-		glUniform4f(glGetUniformLocation(loadedObjectProgram, "color"), 0.1f, 1.f, 1.f, 0.f);
+		glUniform4f(glGetUniformLocation(loadedObjectProgram, "color"), color.x, color.y, color.z, 1.f);
 		glUniform4f(glGetUniformLocation(loadedObjectProgram, "lightPos"), Lights::position.x, Lights::position.y, Lights::position.z, 1.f);
 		//glDrawElements(GL_TRIANGLE_STRIP, ver, GL_UNSIGNED_BYTE, 0);
 

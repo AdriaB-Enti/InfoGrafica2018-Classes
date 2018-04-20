@@ -40,7 +40,7 @@ namespace LoadedObject {
 	std::vector< glm::vec2 > uvs;
 	std::vector< glm::vec3 > normals;
 
-	void setupLoadedObject();
+	void setupLoadedObject(std::string objectModel, float scale);
 	void cleanupLoadedObject();
 
 	void drawLoadedObject();
@@ -120,7 +120,7 @@ void GLinit(int width, int height) {
 	Cube::setupCube();*/
 
 	
-	LoadedObject::setupLoadedObject();
+	LoadedObject::setupLoadedObject("treeTriangulated.obj",0.05f);
 
 	
 
@@ -135,7 +135,7 @@ void GLcleanup() {
 	Axis::cleanupAxis();
 	Cube::cleanupCube();
 */
-
+	LoadedObject::cleanupLoadedObject();
 
 }
 
@@ -255,8 +255,12 @@ void main() {\n\
 
 
 
-	void setupLoadedObject() {
-		bool res = loadOBJ("cube.obj", LoadedObject::vertices, LoadedObject::uvs, LoadedObject::normals);
+	void setupLoadedObject(std::string objectModel, float scale) {
+
+		objMat = glm::scale(glm::mat4(), glm::vec3(scale));
+
+		//bool res = loadOBJ("cube.obj", LoadedObject::vertices, LoadedObject::uvs, LoadedObject::normals);
+		bool res = loadOBJ(objectModel.c_str(), LoadedObject::vertices, LoadedObject::uvs, LoadedObject::normals);
 		for (int i = 0; i < LoadedObject::vertices.size(); i++)
 		{
 			std::cout << "vert" << i << ": " << LoadedObject::vertices.at(i).x << "/" << LoadedObject::vertices.at(i).y << "/" << LoadedObject::vertices.at(i).z << std::endl;
@@ -321,8 +325,8 @@ void main() {\n\
 		glUniform4f(glGetUniformLocation(loadedObjectProgram, "color"), 0.1f, 1.f, 1.f, 0.f);
 		//glDrawElements(GL_TRIANGLE_STRIP, ver, GL_UNSIGNED_BYTE, 0);
 
-		//glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
 		glUseProgram(0);
 		glBindVertexArray(0);

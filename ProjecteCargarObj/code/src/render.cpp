@@ -24,15 +24,23 @@ void setupAxis();
 void cleanupAxis();
 void drawAxis();
 }
-
 namespace Cube {
 	void setupCube();
 	void cleanupCube();
 	void updateCube(const glm::mat4& transform);
 	void drawCube();
 }
+namespace Sphere {
+	void setupSphere(glm::vec3 pos = glm::vec3(0.f, 1.f, 0.f), float radius = 1.f);
+	void cleanupSphere();
+	void updateSphere(glm::vec3 pos, float radius = 1.f);
+	void drawSphere();
+}
 
 
+namespace Lights {
+	glm::vec3 position = glm::vec3(4);
+}
 
 //variables to load an object:
 namespace LoadedObject {
@@ -120,13 +128,11 @@ void GLinit(int width, int height) {
 	Cube::setupCube();*/
 
 	
-	LoadedObject::setupLoadedObject("treeTriangulated.obj",0.05f);
-
-	
-
+	//LoadedObject::setupLoadedObject("sniperModel.obj", 0.05f);
+	LoadedObject::setupLoadedObject("treeTriangulated.obj", 0.05f);
 
 
-
+	Sphere::setupSphere(Lights::position,0.5f);
 
 }
 
@@ -136,7 +142,7 @@ void GLcleanup() {
 	Cube::cleanupCube();
 */
 	LoadedObject::cleanupLoadedObject();
-
+	Sphere::cleanupSphere();
 }
 
 void GLrender(double currentTime) {
@@ -154,7 +160,7 @@ void GLrender(double currentTime) {
 	Axis::drawAxis();
 	Cube::drawCube();*/
 	LoadedObject::drawLoadedObject();
-
+	Sphere::drawSphere();
 
 	ImGui::Render();
 }
@@ -212,9 +218,17 @@ namespace LoadedObject {
 		uniform mat4 objMat;\n\
 		uniform mat4 mv_Mat;\n\
 		uniform mat4 mvpMat;\n\
+		uniform vec4 lightPos;\n\
+		out vec4 lightDifuse;\n\
 		void main() {\n\
 			gl_Position = mvpMat * objMat * vec4(in_Position, 1.0);\n\
 			vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0);\n\
+			\n\
+			float distance = distance(vec4(in_Position, 1.0),lightPos);\n\
+			vec4 lightDir = normalize(lightPos - gl_Position);\n\
+			\n\
+			//lightDifuse = dot(vec4(in_Normal, 1.0),lightDir)*2/(4*3.14159);\n\
+			//lightDifuse = dot(vec4(in_Normal.xyz, 1.0),lightDir)*2.0;\n\
 		}";
 
 	const char* loadedObject_fragShader =
@@ -223,35 +237,14 @@ namespace LoadedObject {
 		out vec4 out_Color;\n\
 		uniform mat4 mv_Mat;\n\
 		uniform vec4 color;\n\
+		uniform vec4 lightPos;\n\
+		in vec4 lightDifuse;\n\
 		void main() {\n\
-			out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(0.0, 1.0, 0.0, 0.0)) + color.xyz * 0.3, 1.0 );\n\
+			//out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(0.0, 1.0, 0.0, 0.0)) + color.xyz * 0.3, 1.0 );\n\
+			//out_Color = vec4(dot(lightPos,vert_Normal),0.0,0.0, 1.0 );\n\
+			//out_Color = vec4(dot(lightPos,vert_Normal),0.0,0.0, 1.0 );\n\
+			out_Color = vec4(lightDifuse.xyz, 1.0 );\n\
 		}";
-
-
-
-	const char* cube_vertShader =
-		"#version 330\n\
-	in vec3 in_Position;\n\
-	in vec3 in_Normal;\n\
-	out vec4 vert_Normal;\n\
-	uniform mat4 objMat;\n\
-	uniform mat4 mv_Mat;\n\
-	uniform mat4 mvpMat;\n\
-	void main() {\n\
-		gl_Position = mvpMat * objMat * vec4(in_Position, 1.0);\n\
-		vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0);\n\
-	}";
-
-
-	const char* cube_fragShader =
-		"#version 330\n\
-in vec4 vert_Normal;\n\
-out vec4 out_Color;\n\
-uniform mat4 mv_Mat;\n\
-uniform vec4 color;\n\
-void main() {\n\
-	out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(0.0, 1.0, 0.0, 0.0)) + color.xyz * 0.3, 1.0 );\n\
-}";
 
 
 
@@ -261,9 +254,13 @@ void main() {\n\
 
 		//bool res = loadOBJ("cube.obj", LoadedObject::vertices, LoadedObject::uvs, LoadedObject::normals);
 		bool res = loadOBJ(objectModel.c_str(), LoadedObject::vertices, LoadedObject::uvs, LoadedObject::normals);
-		for (int i = 0; i < LoadedObject::vertices.size(); i++)
+		
+		if (false)
 		{
-			std::cout << "vert" << i << ": " << LoadedObject::vertices.at(i).x << "/" << LoadedObject::vertices.at(i).y << "/" << LoadedObject::vertices.at(i).z << std::endl;
+			for (int i = 0; i < LoadedObject::vertices.size(); i++)
+			{
+				std::cout << "vert" << i << ": " << LoadedObject::vertices.at(i).x << "/" << LoadedObject::vertices.at(i).y << "/" << LoadedObject::vertices.at(i).z << std::endl;
+			}
 		}
 
 
@@ -296,8 +293,8 @@ void main() {\n\
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-		loadedObjectShaders[0] = compileShader(cube_vertShader, GL_VERTEX_SHADER, "objectVert");
-		loadedObjectShaders[1] = compileShader(cube_fragShader, GL_FRAGMENT_SHADER, "objectFrag");
+		loadedObjectShaders[0] = compileShader(loadedObject_vertShader, GL_VERTEX_SHADER, "objectVert");
+		loadedObjectShaders[1] = compileShader(loadedObject_fragShader, GL_FRAGMENT_SHADER, "objectFrag");
 
 		loadedObjectProgram = glCreateProgram();
 		glAttachShader(loadedObjectProgram, loadedObjectShaders[0]);
@@ -323,6 +320,7 @@ void main() {\n\
 		glUniformMatrix4fv(glGetUniformLocation(loadedObjectProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
 		glUniformMatrix4fv(glGetUniformLocation(loadedObjectProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
 		glUniform4f(glGetUniformLocation(loadedObjectProgram, "color"), 0.1f, 1.f, 1.f, 0.f);
+		glUniform4f(glGetUniformLocation(loadedObjectProgram, "lightPos"), Lights::position.x, Lights::position.y, Lights::position.z, 1.f);
 		//glDrawElements(GL_TRIANGLE_STRIP, ver, GL_UNSIGNED_BYTE, 0);
 
 		//glDrawArrays(GL_TRIANGLES, 0, 36);

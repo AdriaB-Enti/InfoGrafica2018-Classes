@@ -231,7 +231,7 @@ namespace LoadedObject {
 			float distance = distance(lightPos, newPos);													\n\
 			vec4 lightDir = normalize(lightPos - newPos);													\n\
 																											\n\
-			lightDifuse = dot(newNormal,lightDir)*150/(4*3.14159*distance*distance);						\n\
+			lightDifuse = dot(newNormal,lightDir)*80/(4*3.14159*distance*distance);						\n\
 			//lightDifuse = 1.0;\n\
 		}";
 
@@ -245,7 +245,7 @@ namespace LoadedObject {
 		in float lightDifuse;\n\
 		void main() {\n\
 			//out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(0.0, 1.0, 0.0, 0.0)) + color.xyz * 0.3, 1.0 );\n\
-			out_Color = vec4(color.xyz*lightDifuse, 1.0 );\n\
+			out_Color = vec4(color.xyz*0.5+color.xyz*lightDifuse, 1.0 );\n\
 		}";
 
 

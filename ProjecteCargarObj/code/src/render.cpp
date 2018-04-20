@@ -153,7 +153,7 @@ void GLrender(double currentTime) {
 	/*Box::drawCube();
 	Axis::drawAxis();
 	Cube::drawCube();*/
-
+	LoadedObject::drawLoadedObject();
 
 
 	ImGui::Render();
@@ -197,6 +197,7 @@ namespace LoadedObject {
 	//std::vector< glm::vec3 > vertices;	//---DELETE
 	//std::vector< glm::vec2 > uvs;
 	//std::vector< glm::vec3 > normals;
+	glm::mat4 objMat = glm::mat4(1.f);
 
 	GLuint loadedObjectVao;
 	GLuint loadedObjectVbo[2];	//----------------2: Vertex positions and normals
@@ -225,6 +226,33 @@ namespace LoadedObject {
 		void main() {\n\
 			out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(0.0, 1.0, 0.0, 0.0)) + color.xyz * 0.3, 1.0 );\n\
 		}";
+
+
+
+	const char* cube_vertShader =
+		"#version 330\n\
+	in vec3 in_Position;\n\
+	in vec3 in_Normal;\n\
+	out vec4 vert_Normal;\n\
+	uniform mat4 objMat;\n\
+	uniform mat4 mv_Mat;\n\
+	uniform mat4 mvpMat;\n\
+	void main() {\n\
+		gl_Position = mvpMat * objMat * vec4(in_Position, 1.0);\n\
+		vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0);\n\
+	}";
+
+
+	const char* cube_fragShader =
+		"#version 330\n\
+in vec4 vert_Normal;\n\
+out vec4 out_Color;\n\
+uniform mat4 mv_Mat;\n\
+uniform vec4 color;\n\
+void main() {\n\
+	out_Color = vec4(color.xyz * dot(vert_Normal, mv_Mat*vec4(0.0, 1.0, 0.0, 0.0)) + color.xyz * 0.3, 1.0 );\n\
+}";
+
 
 
 	void setupLoadedObject() {
@@ -260,10 +288,23 @@ namespace LoadedObject {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeVbo[2]);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIdx), cubeIdx, GL_STATIC_DRAW);*/
 
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		loadedObjectShaders[0] = compileShader(cube_vertShader, GL_VERTEX_SHADER, "objectVert");
+		loadedObjectShaders[1] = compileShader(cube_fragShader, GL_FRAGMENT_SHADER, "objectFrag");
+
+		loadedObjectProgram = glCreateProgram();
+		glAttachShader(loadedObjectProgram, loadedObjectShaders[0]);
+		glAttachShader(loadedObjectProgram, loadedObjectShaders[1]);
+		glBindAttribLocation(loadedObjectProgram, 0, "in_Position");
+		glBindAttribLocation(loadedObjectProgram, 1, "in_Normal");
+		linkProgram(loadedObjectProgram);
 
 	}
 	void cleanupLoadedObject() {
-		glDeleteBuffers(3, loadedObjectVbo);
+		glDeleteBuffers(2, loadedObjectVbo);
 		glDeleteVertexArrays(1, &loadedObjectVao);
 
 		glDeleteProgram(loadedObjectProgram);
@@ -271,7 +312,21 @@ namespace LoadedObject {
 		glDeleteShader(loadedObjectShaders[1]);
 	}
 	void drawLoadedObject() {
+		//glprimitive restart fora
+		glBindVertexArray(loadedObjectVao);
+		glUseProgram(loadedObjectProgram);
+		glUniformMatrix4fv(glGetUniformLocation(loadedObjectProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(objMat));
+		glUniformMatrix4fv(glGetUniformLocation(loadedObjectProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
+		glUniformMatrix4fv(glGetUniformLocation(loadedObjectProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
+		glUniform4f(glGetUniformLocation(loadedObjectProgram, "color"), 0.1f, 1.f, 1.f, 0.f);
+		//glDrawElements(GL_TRIANGLE_STRIP, ver, GL_UNSIGNED_BYTE, 0);
 
+		//glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glUseProgram(0);
+		glBindVertexArray(0);
+		//glDisable(GL_PRIMITIVE_RESTART);
 	}
 }
 

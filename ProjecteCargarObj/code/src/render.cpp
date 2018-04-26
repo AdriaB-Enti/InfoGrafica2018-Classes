@@ -37,13 +37,14 @@ namespace Sphere {
 	void drawSphere();
 }
 
-
+//My custom namespaces
 namespace Lights {
 	glm::vec3 position = glm::vec3(4,4,4);
-	void updateLightPos();
-}
+	const float LIGHT_SPHERE_RADIUS = 0.5f;
+	const float MOVEMENT_RADIUS = 4.f;
+	void updateLightPos(float movementRadius, float totalTtime);
+}	
 
-//variables to load an object:
 namespace LoadedObject {
 	std::vector< glm::vec3 > vertices;
 	std::vector< glm::vec2 > uvs;
@@ -84,9 +85,9 @@ namespace RV = RenderVars;
 
 namespace Lights {
 	//actulitza la posició de la llum perquè es mogui en un cercle
-	void updateLightPos(float radius, float totalTtime)
+	void updateLightPos(float movementRadius, float totalTtime)
 	{
-		position = glm::vec3(radius*glm::sin(totalTtime), position.y, radius*glm::cos(totalTtime));
+		position = glm::vec3(movementRadius*glm::cos(totalTtime), position.y, movementRadius*glm::sin(totalTtime));
 	}
 
 }
@@ -175,8 +176,8 @@ void GLrender(double currentTime) {
 
 	ImGui::Render();
 
-	Lights::updateLightPos(5, currentTime);
-	Sphere::updateSphere(Lights::position, 0.5f);
+	Lights::updateLightPos(Lights::MOVEMENT_RADIUS, currentTime);
+	Sphere::updateSphere(Lights::position, Lights::LIGHT_SPHERE_RADIUS);
 }
 
 
@@ -261,6 +262,28 @@ namespace LoadedObject {
 			out_Color = vec4(color.xyz*0.5+color.xyz*lightDifuse, 1.0 );\n\
 		}";
 
+	const char* loadedObject_toonShading_fragShader =
+		"#version 330\n\
+		in vec4 vert_Normal;\n\
+		out vec4 out_Color;\n\
+		uniform mat4 mv_Mat;\n\
+		uniform vec4 color;\n\
+		uniform vec4 lightPos;\n\
+		in float lightDifuse;\n\
+		void main() {\n\
+			float toonDifuse = 0.;																											\n\
+			if(lightDifuse < 0.2) {																											\n\
+				toonDifuse = 0.; //useles...																								\n\
+			} else if(lightDifuse > 0.2 && lightDifuse < 0.4) {																				\n\
+				toonDifuse = 0.2;																											\n\
+			} else if(lightDifuse > 0.4 && lightDifuse < 0.5) {																				\n\
+				toonDifuse = 0.4;																											\n\
+			} else {																														\n\
+				toonDifuse = 1.;																											\n\
+			}																																\n\
+																																			\n\
+			out_Color = vec4(color.xyz*toonDifuse, 1.0 );\n\
+		}";
 
 
 	void setupLoadedObject(std::string objectModel, float scale, glm::vec3 initColor) {
@@ -306,7 +329,7 @@ namespace LoadedObject {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 		loadedObjectShaders[0] = compileShader(loadedObject_vertShader, GL_VERTEX_SHADER, "objectVert");
-		loadedObjectShaders[1] = compileShader(loadedObject_fragShader, GL_FRAGMENT_SHADER, "objectFrag");
+		loadedObjectShaders[1] = compileShader(loadedObject_toonShading_fragShader, GL_FRAGMENT_SHADER, "objectFrag");
 
 		loadedObjectProgram = glCreateProgram();
 		glAttachShader(loadedObjectProgram, loadedObjectShaders[0]);

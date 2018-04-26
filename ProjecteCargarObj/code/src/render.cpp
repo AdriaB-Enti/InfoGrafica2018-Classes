@@ -40,6 +40,7 @@ namespace Sphere {
 
 namespace Lights {
 	glm::vec3 position = glm::vec3(4,4,4);
+	void updateLightPos();
 }
 
 //variables to load an object:
@@ -80,6 +81,15 @@ namespace RenderVars {
 	float rota[2] = { 0.f, 0.f };
 }
 namespace RV = RenderVars;
+
+namespace Lights {
+	//actulitza la posició de la llum perquè es mogui en un cercle
+	void updateLightPos(float radius, float totalTtime)
+	{
+		position = glm::vec3(radius*glm::sin(totalTtime), position.y, radius*glm::cos(totalTtime));
+	}
+
+}
 
 void GLResize(int width, int height) {
 	glViewport(0, 0, width, height);
@@ -164,6 +174,9 @@ void GLrender(double currentTime) {
 	Sphere::drawSphere();
 
 	ImGui::Render();
+
+	Lights::updateLightPos(5, currentTime);
+	Sphere::updateSphere(Lights::position, 0.5f);
 }
 
 
